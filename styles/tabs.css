@@ -1,0 +1,90 @@
+/* Styles for tabs components */
+.tabs-container {
+  position: relative;
+  width: 100%;
+}
+
+.tabs-list {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 1rem;
+  /* Changed from inline-flex to flex for better responsiveness */
+  /* Removed fixed height to allow for better responsiveness */
+  /* Removed border-radius for a cleaner look */
+}
+
+.tabs-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s ease;
+  color: var(--muted-foreground);
+  /* Changed to use border-bottom for the underline effect */
+  /* Removed border-radius for cleaner look */
+}
+
+.tabs-trigger:hover {
+  color: var(--primary);
+}
+
+.tabs-trigger:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--ring);
+}
+
+.tabs-trigger[data-state="active"] {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+  /* Removed background-color and box-shadow for cleaner style */
+  /* Removed transform scale for more consistent look */
+}
+
+.tabs-trigger:disabled {
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.tabs-content {
+  padding: 0.5rem 0;
+  /* Changed from margin-top to padding for better spacing */
+}
+
+.tabs-content[data-state="inactive"] {
+  display: none;
+  /* Changed from opacity/transform to display:none for cleaner transitions */
+}
+
+.tabs-content[data-state="active"] {
+  display: block;
+  animation: fadeIn 0.2s ease-in-out;
+  /* Added a simple fade-in animation */
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Additional styles for specific tab layouts */
+.tabs-bordered {
+  width: 100%;
+}
+
+.tabs-bordered .tabs-list {
+  background-color: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  padding: 0;
+}
+
+/* No longer using media queries for dark mode */

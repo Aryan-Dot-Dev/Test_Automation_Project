@@ -1,0 +1,40 @@
+{
+  "_format": "hh-sol-cache-2",
+  "files": {
+    "C:\\Users\\suspi\\OneDrive\\Desktop\\blockchain-test-management\\contracts\\TestDataManager.sol": {
+      "lastModificationDate": 1746516015134,
+      "contentHash": "7680fb0d0465d1533d01246e880f3612",
+      "sourceName": "contracts/TestDataManager.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.19"
+      ],
+      "artifacts": [
+        "TestDataManager"
+      ]
+    }
+  }
+}
