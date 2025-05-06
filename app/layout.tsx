@@ -4,8 +4,12 @@ import '@/styles/tabs.css'
 import '@/styles/card.css'
 import '@/styles/details.css'
 import '@/styles/list.css'
+import '@/styles/header.css'
 import { ThemeProvider } from "@/components/theme-provider"
 import { Inter } from 'next/font/google'
+import { WalletProvider } from '@/hooks/use-wallet'
+import Header from '@/components/layout/header'
+import HeaderContent from '@/components/layout/header-content'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -29,9 +33,14 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <div className="flex flex-col min-h-screen">
-            {children}
-          </div>
+          <WalletProvider>
+            <div className="flex flex-col min-h-screen">
+              <HeaderContent />
+              <main className="flex-grow pt-16">
+                {children}
+              </main>
+            </div>
+          </WalletProvider>
         </ThemeProvider>
       </body>
     </html>

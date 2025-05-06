@@ -210,9 +210,17 @@ export function TestDataForm({ contract, account, onSuccess, onError }: TestData
       logger.debug("TestDataForm", "Form reset")
 
       const successMsg = "Test data and file successfully stored on the blockchain!"
+      
+      // Log information about the success component
       logger.info("TestDataForm", successMsg, {
         transactionHash: tx.hash,
+        successComponentInfo: {
+          className: "upload-success",
+          iconClassName: "success-icon",
+          componentText: "Uploaded to IPFS"
+        }
       })
+      
       onSuccess(successMsg)
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Unknown error"
@@ -277,7 +285,7 @@ export function TestDataForm({ contract, account, onSuccess, onError }: TestData
                   <FormLabel className="form-label">Test Type</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
-                      <SelectTrigger className="form-input">
+                      <SelectTrigger className="form-input test-type">
                         <SelectValue placeholder="Select test type" />
                       </SelectTrigger>
                     </FormControl>
@@ -305,7 +313,7 @@ export function TestDataForm({ contract, account, onSuccess, onError }: TestData
                   <FormLabel className="form-label">Test Result</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
-                      <SelectTrigger className="form-input">
+                      <SelectTrigger className="form-input test-result ">
                         <SelectValue placeholder="Select test result" />
                       </SelectTrigger>
                     </FormControl>
@@ -445,6 +453,7 @@ export function TestDataForm({ contract, account, onSuccess, onError }: TestData
             type="submit" 
             disabled={isSubmitting || !uploadedFileData} 
             className="form-submit-button"
+            id="create-test-button"
           >
             {isSubmitting ? (
               <>

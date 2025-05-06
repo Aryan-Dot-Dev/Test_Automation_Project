@@ -5,13 +5,19 @@ import { ethers } from "ethers"
 import { Button } from "@/components/ui/button"
 import { Wallet } from "lucide-react"
 import { logger } from "@/lib/logger"
+import { useWallet } from "@/hooks/use-wallet"
+
+interface ErrorWithCode extends Error {
+  code?: number
+}
 
 interface ConnectWalletProps {
-  onConnect: (account: string, provider: ethers.BrowserProvider, signer: ethers.Signer) => void
+  onConnect?: (account: string, provider: ethers.BrowserProvider, signer: ethers.Signer) => void
 }
 
 export function ConnectWallet({ onConnect }: ConnectWalletProps) {
   const [isConnecting, setIsConnecting] = useState(false)
+  const { setWalletInfo } = useWallet()
 
   const connectWallet = async () => {
     logger.info("ConnectWallet", "Wallet connection initiated")
@@ -103,11 +109,17 @@ export function ConnectWallet({ onConnect }: ConnectWalletProps) {
       const network = await provider.getNetwork();
       logger.info("ConnectWallet", "Wallet connected successfully", {
         account: account,
-        chainId: network.chainId,
+        chainId: network.chainId.toString(), // Convert BigInt to string
         chainName: network.name
       })
 
-      onConnect(account, provider, signer)
+      // Update the global wallet context
+      setWalletInfo(account, provider, signer)
+      
+      // Call the onConnect callback if provided
+      if (onConnect) {
+        onConnect(account, provider, signer)
+      }
     } catch (error) {
       const typedError = error as Error;
       const errorMessage = typedError.message || "Unknown error occurred";

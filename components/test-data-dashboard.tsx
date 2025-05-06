@@ -1,27 +1,25 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { ethers } from "ethers"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
-import { AlertCircle, CheckCircle2, FileText } from "lucide-react"
+import { AlertCircle, CheckCircle2, FileText, LogOut } from "lucide-react"
 import { TestDataForm } from "@/components/test-data-form"
 import { TestDataList } from "@/components/test-data-list"
 import { AuditLog } from "@/components/audit-log"
 import { ConnectWallet } from "@/components/connect-wallet"
 import { LogViewer } from "@/components/log-viewer"
-import TestDataManagerABI from "@/artifacts/contracts/TestDataManager.sol/TestDataManager.json";
+import TestDataManagerABI from "@/artifacts/contracts/TestDataManager.sol/TestDataManager.json"
 import { logger } from "@/lib/logger"
+import { useWallet } from "@/hooks/use-wallet"
 import "@/styles/dashboard.css"
 
 export function TestDataDashboard() {
-  const [provider, setProvider] = useState<ethers.BrowserProvider | null>(null)
-  const [signer, setSigner] = useState<ethers.Signer | null>(null)
+  const { address, provider, signer, isConnected, disconnect } = useWallet()
   const [contract, setContract] = useState<ethers.Contract | null>(null)
-  const [account, setAccount] = useState<string>("")
-  const [isConnected, setIsConnected] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [showLogs, setShowLogs] = useState(false)
@@ -34,100 +32,6 @@ export function TestDataDashboard() {
     81337: "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0"  // Custom Hardhat chainId
   };
 
-  useEffect(() => {
-    logger.info("TestDataDashboard", "Component mounted")
-
-    const initializeEthers = async () => {
-      logger.info("TestDataDashboard", "Initializing ethers")
-
-      if (window.ethereum) {
-        try {
-          // Clear any previous errors
-          setError(null)
-          logger.debug("TestDataDashboard", "Ethereum detected, attempting to connect")
-
-          // Check if MetaMask is locked
-          const initialAccounts = await window.ethereum.request({ method: 'eth_accounts' });
-          if (initialAccounts.length === 0) {
-            logger.info("TestDataDashboard", "MetaMask is locked or user has not connected any accounts");
-            // We won't throw an error here, as the user can still click the connect button
-            return;
-          }
-
-          // Create a new provider
-          const web3Provider = new ethers.BrowserProvider(window.ethereum)
-          setProvider(web3Provider)
-          logger.debug("TestDataDashboard", "BrowserProvider created")
-
-          // Get the chain ID
-          const network = await web3Provider.getNetwork()
-          const chainId = Number(network.chainId)
-          logger.debug("TestDataDashboard", "Network detected", { chainId })
-
-          // Get the contract address for the current chain ID
-          const contractAddress = contractAddresses[chainId]
-          if (!contractAddress) {
-            logger.warn("TestDataDashboard", "Unsupported network", { chainId });
-            setError(`Network with chain ID ${chainId} is not supported. Please connect to Hardhat local network.`);
-            return;
-          }
-
-          // Get the signer
-          const web3Signer = await web3Provider.getSigner()
-          setSigner(web3Signer)
-          logger.debug("TestDataDashboard", "Signer obtained")
-
-          // Create contract instance
-          logger.debug("TestDataDashboard", "Creating contract instance", { contractAddress })
-          const testDataContract = new ethers.Contract(contractAddress, TestDataManagerABI.abi, web3Signer)
-          setContract(testDataContract)
-          logger.info("TestDataDashboard", "Contract instance created")
-
-          // Get connected accounts
-          logger.debug("TestDataDashboard", "Getting connected accounts")
-          const connectedAccounts = await web3Provider.listAccounts()
-          logger.debug("TestDataDashboard", "Accounts retrieved", { accountsCount: connectedAccounts.length })
-
-          if (connectedAccounts.length > 0) {
-            setAccount(await connectedAccounts[0].getAddress())
-            setIsConnected(true)
-            logger.info("TestDataDashboard", "User already connected", { account: await connectedAccounts[0].getAddress() })
-          } else {
-            logger.info("TestDataDashboard", "No accounts connected yet")
-          }
-        } catch (err) {
-          const errorMessage = err instanceof Error ? err.message : "Unknown error"
-          logger.error("TestDataDashboard", "Failed to initialize ethers", {
-            error: errorMessage,
-            stack: err instanceof Error ? err.stack : undefined,
-          })
-          console.error("Failed to initialize ethers:", err)
-          
-          // Provide more specific error messages
-          if (errorMessage.includes("network changed")) {
-            setError("Network change detected. Please refresh the page.");
-          } else if (errorMessage.includes("user rejected")) {
-            setError("Connection request was rejected. Please approve the connection in MetaMask.");
-          } else if (errorMessage.includes("already processing")) {
-            setError("Another request is already being processed. Please wait and try again.");
-          } else {
-            setError("Failed to connect to blockchain. Please make sure MetaMask is installed and connected.");
-          }
-        }
-      } else {
-        logger.warn("TestDataDashboard", "Ethereum wallet not detected")
-        setError("Ethereum wallet not detected. Please install MetaMask.");
-      }
-    }
-
-    initializeEthers()
-
-    // Cleanup function
-    return () => {
-      logger.info("TestDataDashboard", "Component unmounting")
-    }
-  }, [])
-
   const handleConnect = async (
     connectedAccount: string,
     connectedProvider: ethers.BrowserProvider,
@@ -135,30 +39,39 @@ export function TestDataDashboard() {
   ) => {
     logger.info("TestDataDashboard", "Handling wallet connection", { account: connectedAccount })
 
-    setAccount(connectedAccount)
-    setProvider(connectedProvider)
-    setSigner(connectedSigner)
-    setIsConnected(true)
+    try {
+      // Get the chain ID
+      const network = await connectedProvider.getNetwork()
+      const chainId = Number(network.chainId)
+      logger.debug("TestDataDashboard", "Network detected after wallet connection", { chainId })
 
-    // Get the chain ID
-    const network = await connectedProvider.getNetwork()
-    const chainId = Number(network.chainId)
-    logger.debug("TestDataDashboard", "Network detected after wallet connection", { chainId })
+      // Get the contract address for the current chain ID
+      const contractAddress = contractAddresses[chainId]
+      if (!contractAddress) {
+        setError(`Unsupported network with chain ID: ${chainId}`)
+        return
+      }
 
-    // Get the contract address for the current chain ID
-    const contractAddress = contractAddresses[chainId]
-    if (!contractAddress) {
-      setError(`Unsupported network with chain ID: ${chainId}`)
-      return
+      // Create contract instance
+      logger.debug("TestDataDashboard", "Creating contract instance after wallet connection", { contractAddress })
+      const testDataContract = new ethers.Contract(contractAddress, TestDataManagerABI.abi, connectedSigner)
+      setContract(testDataContract)
+      logger.info("TestDataDashboard", "Contract instance created after wallet connection")
+
+      setSuccess("Wallet connected successfully!")
+      setTimeout(() => setSuccess(null), 3000)
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Unknown error"
+      logger.error("TestDataDashboard", "Error setting up contract", { error: errorMessage })
+      setError("Error initializing the smart contract. Please try again.")
     }
+  }
 
-    // Create contract instance
-    logger.debug("TestDataDashboard", "Creating contract instance after wallet connection", { contractAddress })
-    const testDataContract = new ethers.Contract(contractAddress, TestDataManagerABI.abi, connectedSigner)
-    setContract(testDataContract)
-    logger.info("TestDataDashboard", "Contract instance created after wallet connection")
-
-    setSuccess("Wallet connected successfully!")
+  const handleLogout = () => {
+    logger.info("TestDataDashboard", "User logout initiated")
+    disconnect()
+    setContract(null)
+    setSuccess("Logged out successfully")
     setTimeout(() => setSuccess(null), 3000)
   }
 
@@ -202,10 +115,17 @@ export function TestDataDashboard() {
           <FileText className="h-4 w-4" />
           View Logs
         </Button>
+        
+        {isConnected && (
+          <Button variant="outline" size="sm" onClick={handleLogout} className="btn-with-icon ml-2 logout">
+            <LogOut className="h-4 w-4" />
+            Logout
+          </Button>
+        )}
       </div>
 
       {!isConnected ? (
-        <Card className="card-dashed">
+        <Card className="card-dashed notConnected ">
           <CardHeader>
             <CardTitle className="text-xl">Connect Your Wallet</CardTitle>
             <CardDescription>
@@ -221,9 +141,9 @@ export function TestDataDashboard() {
       ) : (
         <Tabs defaultValue="submit" className="w-full">
           <TabsList className="tabs-three">
-            <TabsTrigger value="submit">Submit Test Data</TabsTrigger>
-            <TabsTrigger value="view">View Test Data</TabsTrigger>
-            <TabsTrigger value="audit">Audit Logs</TabsTrigger>
+            <TabsTrigger className="submit-test-data" value="submit">Submit Test Data</TabsTrigger>
+            <TabsTrigger className="view-test-data" value="view">View Test Data</TabsTrigger>
+            <TabsTrigger className="audit-logs" value="audit">Audit Logs</TabsTrigger>
           </TabsList>
 
           <TabsContent value="submit" className="tab-content-panel">
@@ -235,7 +155,7 @@ export function TestDataDashboard() {
               <CardContent className="card-content-compact">
                 <TestDataForm
                   contract={contract}
-                  account={account}
+                  account={address || ""}
                   onSuccess={(message) => {
                     logger.info("TestDataDashboard", "Test data submission successful", { message })
                     setSuccess(message)
@@ -252,7 +172,7 @@ export function TestDataDashboard() {
 
           <TabsContent value="view" className="tab-content-panel">
             <Card className="card-borderless">
-              <CardHeader className="card-header-compact">
+              <CardHeader className="card-header-compact view-test-data-header">
                 <CardTitle>View Test Data</CardTitle>
                 <CardDescription>Retrieve and verify test data stored on the blockchain</CardDescription>
               </CardHeader>
